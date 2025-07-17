@@ -12,6 +12,20 @@ st.markdown("""
     .stButton>button {background-color: #4f8bf9; color: white; font-weight: bold; border-radius: 8px;}
     .stDownloadButton {background-color: #22bb33; color: white; font-weight: bold; border-radius: 8px;}
     .stTable {background-color: #fff; border-radius: 8px;}
+    .upload-label {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #4f8bf9;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+    }
+    .upload-box {
+        background: #f0f4fa;
+        border-radius: 10px;
+        padding: 0.5rem 1rem 0.5rem 1rem; /* Reduced vertical padding */
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(79,139,249,0.07);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -20,12 +34,20 @@ st.write("""
 Upload your **Base** and **Comparer** CSV files below. The app will compare them and show you the rows present in the comparer but missing in the base, using all relevant columns. You can preview your files, see the results, and download the missing credit report.
 """)
 
-# File uploaders
-col1, col2 = st.columns(2)
+# File uploaders with clear labels and attractive boxes
+col1, col2 = st.columns(2, gap="large")
 with col1:
-    base_file = st.file_uploader("Upload BASE CSV (the one to check for missing data)", type=["csv"], key="base")
+    st.markdown('<div class="upload-label">Base</div>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="upload-box">', unsafe_allow_html=True)
+        base_file = st.file_uploader("Upload BASE CSV (the one to check for missing data)", type=["csv"], key="base")
+        st.markdown('</div>', unsafe_allow_html=True)
 with col2:
-    comparer_file = st.file_uploader("Upload COMPARER CSV (the one to compare against)", type=["csv"], key="comparer")
+    st.markdown('<div class="upload-label">Comparer</div>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="upload-box">', unsafe_allow_html=True)
+        comparer_file = st.file_uploader("Upload COMPARER CSV (the one to compare against)", type=["csv"], key="comparer")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def extract_quarter_year(po):
     match = re.match(r'Q(\d)(\d{2})', str(po).strip())
@@ -93,11 +115,13 @@ if base_file and comparer_file:
     try:
         base_df = pd.read_csv(base_file)
         comparer_df = pd.read_csv(comparer_file)
-        st.subheader("Preview: BASE CSV")
+        st.markdown("---")
+        st.subheader(":blue[Preview: Base CSV]")
         st.dataframe(base_df.head(20), use_container_width=True)
-        st.subheader("Preview: COMPARER CSV")
+        st.subheader(":orange[Preview: Comparer CSV]")
         st.dataframe(comparer_df.head(20), use_container_width=True)
-        if st.button("Compare and Find Missing Rows", type="primary"):
+        st.markdown("---")
+        if st.button("🔍 Compare and Find Missing Rows", type="primary"):
             with st.spinner("Comparing files and generating report..."):
                 result_df, error = process_and_compare(base_df, comparer_df)
             if error:
@@ -108,7 +132,7 @@ if base_file and comparer_file:
                 # Download button
                 csv_bytes = result_df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label="Download Missing Credit Report CSV",
+                    label="⬇️ Download Missing Credit Report CSV",
                     data=csv_bytes,
                     file_name="Missing_Credit_Report.csv",
                     mime="text/csv"
