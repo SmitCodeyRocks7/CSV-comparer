@@ -118,7 +118,10 @@ with st.form("send_report_form"):
     if delivery_method == "Email":
         recipient = st.text_input("Enter your email address:")
     else:
-        recipient = st.text_input("Enter your WhatsApp phone number (with country code, e.g. +1234567890):")
+        recipient = st.text_input("Enter your WhatsApp number:", placeholder="+1234567890")
+        # Validate phone number (basic)
+        if recipient and not recipient.strip().startswith("+") or not recipient.strip()[1:].isdigit():
+            st.warning("Please enter a valid WhatsApp number with country code (e.g. +1234567890).")
     send_btn = st.form_submit_button("Send Report")
 
 # Main logic
