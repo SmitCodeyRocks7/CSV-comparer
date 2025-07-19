@@ -110,19 +110,33 @@ def compare_bidirectional(df1, df2):
     final_missing = final_missing[columns_to_keep]
     return final_missing
 
+# Initialize session state for storing comparison results
+if 'result_df' not in st.session_state:
+    st.session_state.result_df = None
+if 'comparison_done' not in st.session_state:
+    st.session_state.comparison_done = False
+
 # Add UI for automation
 st.markdown("---")
-st.header("📤 Send Missing Credit Report Automatically")
-with st.form("send_report_form"):
+st.header("📤 Send Missing Credit Report")
+
+# Create columns for delivery method selection
+col1, col2 = st.columns(2)
+with col1:
     delivery_method = st.radio("How would you like to receive the report?", ["Email", "WhatsApp"], horizontal=True)
+
+# Show appropriate input field based on delivery method
+with col2:
     if delivery_method == "Email":
         recipient = st.text_input("Enter your email address:")
+        is_valid_recipient = bool(recipient and "@" in recipient and "." in recipient)
+        if recipient and not is_valid_recipient:
+            st.warning("Please enter a valid email address.")
     else:
-        recipient = st.text_input("Enter your WhatsApp number:", placeholder="+1234567890")
-        # Validate phone number (basic)
-        if recipient and not recipient.strip().startswith("+") or not recipient.strip()[1:].isdigit():
+        recipient = st.text_input("Enter WhatsApp number:", placeholder="+1234567890")
+        is_valid_recipient = bool(recipient and recipient.strip().startswith("+") and recipient.strip()[1:].isdigit())
+        if recipient and not is_valid_recipient:
             st.warning("Please enter a valid WhatsApp number with country code (e.g. +1234567890).")
-    send_btn = st.form_submit_button("Send Report")
 
 # Main logic
 if base_file and comparer_file:
@@ -155,54 +169,23 @@ if base_file and comparer_file:
         st.markdown("---")
         if st.button("🔍 Compare and Find Missing Rows (Both Directions)", type="primary"):
             with st.spinner("Comparing files and generating report..."):
-                result_df = compare_bidirectional(base_sorted, comparer_sorted)
-            st.success(f"Comparison complete! Total missing rows: {len(result_df)}")
-            st.dataframe(result_df, use_container_width=True, height=400)
-            # Download button
-            csv_bytes = result_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="⬇️ Download Missing Credit Report CSV",
-                data=csv_bytes,
-                file_name="Missing_Credit_Report.csv",
-                mime="text/csv"
-            )
-            # Automation: Send report if requested
-            if send_btn and recipient:
-                try:
-                    if delivery_method == "Email":
-                        # Send via SendGrid
-                        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY", "SENDGRID_API_KEY_PLACEHOLDER"))
-                        message = Mail(
-                            from_email='your@email.com',
-                            to_emails=recipient,
-                            subject='Your Missing Credit Report',
-                            html_content='Please find your missing credit report attached.'
-                        )
-                        encoded = base64.b64encode(csv_bytes).decode()
-                        attachedFile = Attachment(
-                            FileContent(encoded),
-                            FileName('Missing_Credit_Report.csv'),
-                            FileType('text/csv'),
-                            Disposition('attachment')
-                        )
-                        message.attachment = attachedFile
-                        response = sg.send(message)
-                        st.success(f"Report sent to {recipient} via Email!")
-                    else:
-                        # Send via Twilio WhatsApp
-                        twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "TWILIO_SID_PLACEHOLDER")
-                        twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "TWILIO_TOKEN_PLACEHOLDER")
-                        twilio_from = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
-                        client = TwilioClient(twilio_sid, twilio_token)
-                        # WhatsApp does not support file attachments directly, so upload to a file host or send as text/download link
-                        # For demo, send as text (first 10 rows)
-                        preview = result_df.head(10).to_csv(index=False)
-                        client.messages.create(
-                            body=f"Your Missing Credit Report (first 10 rows):\n\n{preview}\n\nFor full report, please use the web download.",
-                            from_=f"whatsapp:{twilio_from}",
-                            to=f"whatsapp:{recipient}"
-                        )
-                        st.success(f"Report sent to {recipient} via WhatsApp!")
+                st.session_state.result_df = compare_bidirectional(base_sorted, comparer_sorted)
+                st.session_state.comparison_done = True
+            
+            if st.session_state.result_df.empty:
+                st.warning("No differences found between the files!")
+            else:
+                st.success(f"Comparison complete! Total missing rows: {len(st.session_state.result_df)}")
+                st.dataframe(st.session_state.result_df, use_container_width=True, height=400)
+                
+                # Download button
+                csv_bytes = st.session_state.result_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="⬇️ Download Missing Credit Report CSV",
+                    data=csv_bytes,
+                    file_name="Missing_Credit_Report.csv",
+                    mime="text/csv"
+                )
                 except Exception as e:
                     st.error(f"Failed to send report: {e}")
     except Exception as e:
