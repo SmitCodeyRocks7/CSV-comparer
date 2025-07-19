@@ -7,7 +7,9 @@ A beautiful, user-friendly Streamlit app to compare two CSV files and generate a
 - Preview both files
 - Compare and find rows present in comparer but missing in base
 - Download the missing credit report as CSV
-- Modern, attractive UI
+- Send reports via Email (using SendGrid) or WhatsApp (using Twilio)
+- Smart PO number parsing and categorization
+- Modern, attractive UI with responsive design
 
 ## How to Run Locally
 
@@ -38,7 +40,16 @@ A beautiful, user-friendly Streamlit app to compare two CSV files and generate a
 ```
 streamlit
 pandas
+sendgrid
+twilio
 ```
+
+## Environment Variables
+To enable email and WhatsApp functionality, set these environment variables:
+- `SENDGRID_API_KEY`: Your SendGrid API key for email sending
+- `TWILIO_ACCOUNT_SID`: Your Twilio Account SID
+- `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token
+- `TWILIO_WHATSAPP_FROM`: Your Twilio WhatsApp sender number
 
 ---
 
