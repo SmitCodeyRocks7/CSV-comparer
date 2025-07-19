@@ -186,9 +186,9 @@ if base_file and comparer_file:
                     file_name="Missing_Credit_Report.csv",
                     mime="text/csv"
                 )
-                except Exception as e:
-                    st.error(f"Failed to send report: {e}")
+    except Exception as e:
+        st.error(f"Failed to send report: {e}")
     except Exception as e:
         st.error(f"Error processing files: {e}")
 else:
-    st.info("Please upload both the base and comparer CSV files to begin.") 
+    st.info("Please upload both the base and comparer CSV files to begin.")
